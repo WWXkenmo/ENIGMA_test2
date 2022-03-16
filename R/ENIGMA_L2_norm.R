@@ -134,7 +134,7 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
 			loss <- NULL
             repeat{
                 ratio <- NULL
-                dP <- derive_P2(X, theta,P_old,R,alpha,ref_dis = ref_dis)
+                dP <- derive_P2(X, theta,P_old,R,alpha,ref_dis)
                 for(i in 1:ncol(theta)){
                     P_hat <- proximalpoint(P_old[,,i], tao_k,dP[,,i],beta*10^5)
                     P_old_new[,,i] <- P_hat
@@ -338,7 +338,7 @@ proximalpoint <- function(P, tao_k,dP,beta){
 
 
 
-derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis = "L2"){
+derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis){
   ## P_old: a tensor variable with three dimensions
   ## theta: the cell type proportions variable
   ## cell_type_index: optimize which type of cells
