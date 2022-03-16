@@ -367,7 +367,7 @@ derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis){
     if(ref_dis=="cos"){
       aggre_v <- rowMeans(P_old[,,cell_type_index])
       normfunc <- function(x){sqrt(sum(x^2))}
-	  cosine <- function(x,y){sum(x*y)/(norm(x)*norm(y))}
+	  cosine <- function(x,y){sum(x*y)/(normfunc(x)*normfunc(y))}
       dP2[,,cell_type_index] <- as.matrix(cosine(aggre_v,R.m)*aggre_v/(normfunc(aggre_v)^2) - R.m / (normfunc(R.m)*normfunc(aggre_v)) ) %*% t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
       }
 	}
