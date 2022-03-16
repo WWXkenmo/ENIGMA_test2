@@ -366,8 +366,9 @@ derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis){
     if(ref_dis=="L2") dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
     if(ref_dis=="cos"){
       aggre_v <- rowMeans(P_old[,,cell_type_index])
-      norm <- function(x){sqrt(sum(x^2))}
-      dP2[,,cell_type_index] <- as.matrix(cosine(aggre_v,R.m)*aggre_v/(norm(aggre_v)^2) - R.m / (norm(R.m)*norm(aggre_v)) ) %*% t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
+      normfunc <- function(x){sqrt(sum(x^2))}
+	  cosine <- function(x,y){sum(x*y)/(norm(x)*norm(y))}
+      dP2[,,cell_type_index] <- as.matrix(cosine(aggre_v,R.m)*aggre_v/(normfunc(aggre_v)^2) - R.m / (normfunc(R.m)*normfunc(aggre_v)) ) %*% t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
       }
 	}
   dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e5
