@@ -12,6 +12,7 @@ ENIGMA_L2_max_norm(
   epsilon = 0.001,
   max.iter = 1000,
   ref_dis = "L2",
+  renormalization = TRUE,
   verbose = FALSE,
   pos = TRUE,
   Normalize = TRUE,

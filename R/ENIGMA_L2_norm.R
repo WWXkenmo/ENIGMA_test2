@@ -60,7 +60,7 @@
 #'
 #'
 #' @export
-ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000, ref_dis = "L2",verbose=FALSE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=NULL){
+ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000, ref_dis = "L2",renormalization=TRUE,verbose=FALSE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=NULL){
     suppressPackageStartupMessages(require("scater"))
 	suppressPackageStartupMessages(require("preprocessCore"))
 	
@@ -134,7 +134,7 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
 			loss <- NULL
             repeat{
                 ratio <- NULL
-                dP <- derive_P2(X, theta,P_old,R,alpha,ref_dis)
+                dP <- derive_P2(X, theta,P_old,R,alpha,ref_dis,renormalization)
                 for(i in 1:ncol(theta)){
                     P_hat <- proximalpoint(P_old[,,i], tao_k,dP[,,i],beta*10^5)
                     P_old_new[,,i] <- P_hat
@@ -338,7 +338,7 @@ proximalpoint <- function(P, tao_k,dP,beta){
 
 
 
-derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis){
+derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis,renormalization){
   ## P_old: a tensor variable with three dimensions
   ## theta: the cell type proportions variable
   ## cell_type_index: optimize which type of cells
@@ -377,8 +377,8 @@ derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis){
 	  dP2[,,cell_type_index] <- as.matrix(covSim(aggre_v,R.m)*(aggre_v - mean(aggre_v))/(centerlizeNormFunc(aggre_v)^2) - (R.m-mean(R.m)) / (centerlizeNormFunc(aggre_v)*centerlizeNormFunc(R.m))) %*% t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
 	  }  
 	}
-  dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e5
-  dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e5
+  if(renormalization) dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e5
+  if(renormalization) dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e5
   
   #calculate w1
   #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
