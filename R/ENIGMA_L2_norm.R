@@ -142,10 +142,12 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
 				r <- sub_loss(X, P_old, theta, alpha,beta,R)
                 if(loss_his) loss<- rbind(loss,c(r$part1,r$part2,r$part3))
 				DisList <- c(DisList,max(ratio))
+				if(iter.exp>5){
 				converge_score <- DisList[(length(DisList)-4):length(DisList)] - DisList[(length(DisList)-5):(length(DisList)-1)]
 				if(sum(converge_score)==5){
 				  stop(paste('Convergence Error! please set a higher value for beta or set a smaller value for learning rate (tao_k)\n'
            ,'Suggest set beta = ',beta*2,' or tao_k = ',tao_k/2,sep=""))
+				}
 				}
                 if(max(ratio) < epsilon||iter.exp >= max.iter){break}else{
 
