@@ -18,9 +18,6 @@
 #' @param max.iter
 #' The maximum number of iterations. Default: 1000
 #'
-#' @param ref_dis 
-#' metric for measuring the distance between aggregated CSE and reference, "L2" or "cos", default: "L2" 
-#'
 #' @param verbose
 #' Rreturn the information after each step of processing. Default: TRUE
 #'
@@ -60,7 +57,7 @@
 #'
 #'
 #' @export
-ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000, ref_dis = "L2",renormalization=TRUE,verbose=FALSE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=NULL){
+ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000,verbose=FALSE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=NULL){
     suppressPackageStartupMessages(require("scater"))
 	suppressPackageStartupMessages(require("preprocessCore"))
 	
@@ -132,17 +129,24 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
     cat(date(), 'Optimizing cell type specific expression profile... \n')
             iter.exp <- 0
 			loss <- NULL
+			DisList <- NULL
             repeat{
                 ratio <- NULL
-                dP <- derive_P2(X, theta,P_old,R,alpha,ref_dis,renormalization)
+                dP <- derive_P2(X, theta,P_old,R,alpha)
                 for(i in 1:ncol(theta)){
                     P_hat <- proximalpoint(P_old[,,i], tao_k,dP[,,i],beta*10^5)
                     P_old_new[,,i] <- P_hat
                     ratio <- c(ratio, sum( (P_hat-P_old[,,i])^2 ))
                 }
-                if(verbose) writeLines( sprintf("   Ratio ranges from: %f - %f", min(ratio), max(ratio) ) )
+                if(verbose) writeLines( sprintf("   L2 distance ranges from: %f - %f", min(ratio), max(ratio) ) )
 				r <- sub_loss(X, P_old, theta, alpha,beta,R)
                 if(loss_his) loss<- rbind(loss,c(r$part1,r$part2,r$part3))
+				DisList <- c(DisList,max(ratio))
+				converge_score <- DisList[(length(DisList)-4):length(DisList)] - DisList[(length(DisList)-5):(length(DisList)-1)]
+				if(sum(converge_score)==5){
+				  stop(paste('Convergence Error! please set a higher value for beta or set a smaller value for learning rate (tao_k)\n'
+           ,'Suggest set beta = ',beta*2,' or tao_k = ',tao_k/2,sep=""))
+				}
                 if(max(ratio) < epsilon||iter.exp >= max.iter){break}else{
 
 	    #update P_old
@@ -150,6 +154,7 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
                     iter.exp <- iter.exp + 1
                 }
             }
+			
         ## Return the Loss
         loss_new.obj <- sub_loss(X, P_old, theta, alpha,beta,R)
         if(verbose) writeLines( paste("Total loss: ", loss_new.obj$val ,sep="") )
@@ -338,7 +343,7 @@ proximalpoint <- function(P, tao_k,dP,beta){
 
 
 
-derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis,renormalization){
+derive_P2 <- function(X, theta, P_old,R,alpha){
   ## P_old: a tensor variable with three dimensions
   ## theta: the cell type proportions variable
   ## cell_type_index: optimize which type of cells
@@ -363,22 +368,10 @@ derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis,renormalization){
     X_summary <- X-X_summary
     
     dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
-    if(ref_dis=="L2") dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
-    if(ref_dis=="cos"){
-      aggre_v <- rowMeans(P_old[,,cell_type_index])
-      normfunc <- function(x){sqrt(sum(x^2))}
-	  cosine <- function(x,y){sum(x*y)/(normfunc(x)*normfunc(y))}
-      dP2[,,cell_type_index] <- as.matrix(cosine(aggre_v,R.m)*aggre_v/(normfunc(aggre_v)^2) - R.m / (normfunc(R.m)*normfunc(aggre_v)) ) %*% t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
-      }
-	if(ref_dis=="cor"){
-	  aggre_v <- rowMeans(P_old[,,cell_type_index])
-	  centerlizeNormFunc <- function(x){sqrt(sum((x-mean(x))^2))} 
-	  covSim <- function(x,y){sum((x-mean(x))*(y-mean(y))) / (centerlizeNormFunc(x)*centerlizeNormFunc(y))}
-	  dP2[,,cell_type_index] <- as.matrix(covSim(aggre_v,R.m)*(aggre_v - mean(aggre_v))/(centerlizeNormFunc(aggre_v)^2) - (R.m-mean(R.m)) / (centerlizeNormFunc(aggre_v)*centerlizeNormFunc(R.m))) %*% t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
-	  }  
+    dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
 	}
-  if(renormalization) dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e5
-  if(renormalization) dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e5
+  dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e5
+  dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e5
   
   #calculate w1
   #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
@@ -392,7 +385,6 @@ derive_P2 <- function(X, theta, P_old,R,alpha,ref_dis,renormalization){
   dP <- dP1*as.numeric(w1) + dP2*as.numeric(w2)
   return(dP)
 }
-
 
 
 

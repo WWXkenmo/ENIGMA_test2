@@ -11,8 +11,6 @@ ENIGMA_L2_max_norm(
   beta = 0.1,
   epsilon = 0.001,
   max.iter = 1000,
-  ref_dis = "L2",
-  renormalization = TRUE,
   verbose = FALSE,
   pos = TRUE,
   Normalize = TRUE,
@@ -36,8 +34,6 @@ ENIGMA_L2_max_norm(
 \item{epsilon}{Determine the stop condition in CSE updating. Default: 0.001}
 
 \item{max.iter}{The maximum number of iterations. Default: 1000}
-
-\item{ref_dis}{metric for measuring the distance between aggregated CSE and reference, "L2" or "cos", default: "L2"}
 
 \item{verbose}{Rreturn the information after each step of processing. Default: TRUE}
 
