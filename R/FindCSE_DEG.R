@@ -12,6 +12,9 @@
 #' @param covariate
 #' The data.frame object contains the covariate information of each sample
 #'
+#' @param p_cutoff
+#' The pvalue cutoff of gene expression significance test
+#'
 #' @return A list object contain the DEG results of each cell types
 #'
 #'
@@ -26,7 +29,7 @@
 #' Wang J, Roeder K, Devlin B. Bayesian estimation of cell type–specific gene expression with prior derived from single-cell data[J]. Genome research, 2021, 31(10): 1807-1818.
 #'
 #' @export
-FindCSE_DEG <- function(object,y,FDR_control = TRUE,covariate=NULL,FoldChange = FALSE){
+FindCSE_DEG <- function(object,y,FDR_control = TRUE,covariate=NULL,FoldChange = FALSE,p_cutoff = 0.05){
     ####
     #identify the DEG of ENIGMA outputs require normalized profile
     if(is.null(object@result_CSE_normalized)){
@@ -38,11 +41,22 @@ FindCSE_DEG <- function(object,y,FDR_control = TRUE,covariate=NULL,FoldChange = 
     DEG_list = list()
     if(FDR_control){result <- DEG_test(Exp,y,covariate)}else{result <- DEG_test2(Exp,y,covariate)}
     ES_m <- EffectiveSize(Exp,y,FoldChange)
+	
+	###
+	GeneSigTab = GeneSigTest(object,p_threshold = p_cutoff)
+	
     for(i in cellName){
-        Tab_m <- cbind(ES_m[,i],result$pval[,i],result$qval[,i])
-        if(FoldChange){colnames(Tab_m) <- c("FoldChange","pvalue","qvalue")}else{
-            colnames(Tab_m) <- c("ExpressionDifference","pvalue","qvalue")
+        Tab_m <- cbind(ES_m[,i],result$pval[,i],result$qval[,i],GeneSigTab$call[,i],GeneSigTab$pval[,i])
+        if(FoldChange){colnames(Tab_m) <- c("FoldChange","pvalue","qvalue","sig_gene","sig_gene_p")}else{
+            colnames(Tab_m) <- c("ExpressionDifference","pvalue","qvalue","sig_gene","sig_gene_p")
         }
+		
+		Tab_m = as.data.frame(Tab_m)
+		Tab_m_sig = Tab_m[Tab_m$sig_gene == 1,]
+		Tab_m_nonsig = Tab_m[Tab_m$sig_gene == 0,]
+		Tab_m_sig = Tab_m_sig[order(Tab_m_sig$qvalue,decreasing=FALSE),]
+		Tab_m_nonsig = Tab_m_nonsig[order(Tab_m_nonsig$qvalue,decreasing=FALSE),]
+		Tab_m = rbind(Tab_m_sig,Tab_m_nonsig)
         DEG_list[[i]] <- Tab_m
     }
     DEG_list

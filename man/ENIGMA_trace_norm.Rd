@@ -11,8 +11,10 @@ ENIGMA_trace_norm(
   alpha = 0.5,
   beta = 1,
   tao_k = 1,
-  gamma = NULL,
-  epsilon = NULL,
+  gamma = 0.5,
+  epsilon = 1e-04,
+  epsilon_ks = 0.001,
+  max_ks = 1,
   max.iter = 1000,
   solver = "admm",
   verbose = FALSE,
@@ -20,10 +22,12 @@ ENIGMA_trace_norm(
   Normalize = TRUE,
   Norm.method = "frac",
   preprocess = "log",
-  loss_his = TRUE,
+  loss_his = FALSE,
+  print_loss = FALSE,
   model_tracker = FALSE,
   model_name = NULL,
-  X_int = FALSE
+  X_int = FALSE,
+  calibrate = TRUE
 )
 }
 \arguments{
@@ -53,11 +57,17 @@ a extremly small value, the number of iteration would influence
 the latent dimensions of CSE, as each step is performing singular value thresholding.
 Default: 0.0001}
 
+\item{epsilon_ks}{Minimum error between the conditional number score (see Supplementary Notes for more details) of iteration i and i+1. Default: 0.001}
+
+\item{max_ks}{The stop criteria for conditional number score (see Supplementary Notes for more details). Default: 1}
+
 \item{max.iter}{The maximum number of iterations. Default: 1000}
 
 \item{solver}{The solver for solving trace norm model. method used: admm, admm_fast or proximal point method}
 
 \item{verbose}{Whether return the information after each step of processing. Default: TRUE}
+
+\item{pos}{Set all entries in CSE is positive. Default: TRUE}
 
 \item{Normalize}{Whether perform normalization on resulted expression profile. Default: TRUE}
 
@@ -72,6 +82,8 @@ Default: 0.0001}
 \item{model_name}{name of the model}
 
 \item{X_int}{initialization for CSE profiles, an array object with three dimensions (the number of genes * the number of samples * the number of cell types), if user input a matrix (the number of genes * the number of samples), each cell type would be assigned the same start matrix.}
+
+\item{calibrate}{calibrate the inferred CSE into input bulk gene expression scale. Default: TRUE}
 }
 \value{
 ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.

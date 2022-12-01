@@ -9,7 +9,8 @@ FindCSE_DEG(
   y,
   FDR_control = TRUE,
   covariate = NULL,
-  FoldChange = FALSE
+  FoldChange = FALSE,
+  p_cutoff = 0.05
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ FindCSE_DEG(
 \item{covariate}{The data.frame object contains the covariate information of each sample}
 
 \item{FoldChange}{if output the FoldChange of each gene, if FALSE, then output the expression difference}
+
+\item{p_cutoff}{The pvalue cutoff of gene expression significance test}
 }
 \value{
 A list object contain the DEG results of each cell types
